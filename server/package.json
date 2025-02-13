@@ -3,18 +3,18 @@
   "module": "server.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun src/server.ts"
+    "dev": "nodemon --watch src --exec \"bun\" src/server.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "nodemon": "^3.1.9"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
     "cors": "^2.8.5",
     "express": "^4.21.2"
   }
