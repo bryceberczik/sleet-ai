@@ -1,0 +1,23 @@
+{
+  "name": "server",
+  "module": "server.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --watch src --exec \"bun\" src/server.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "nodemon": "^3.1.9",
+    "prisma": "^6.3.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.3.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
