@@ -41,7 +41,7 @@ export const getUserById = async (req: Request, res: Response) => {
 
   try {
     const parsedId = idSchema.safeParse(id);
-    if (parsedId.success) {
+    if (!parsedId.success) {
       res.status(400).json({ message: "Controller Parsing Error" });
       return;
     }
@@ -262,7 +262,12 @@ export const deleteUser = async (req: Request, res: Response) => {
       return;
     }
 
-    if (parsedPassword.data !== existingUser.password) {
+    const passwordIsValid = await bcrypt.compare(
+      parsedPassword.data,
+      existingUser.password
+    );
+
+    if (!passwordIsValid) {
       res.status(403).json({ message: "Passwords do not match." });
       return;
     }
