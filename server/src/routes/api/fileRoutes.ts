@@ -12,7 +12,7 @@ import upload from "../../config/upload";
 const router = Router();
 
 router.get("/", getFiles);
-router.get("/userid/:userid", getUserFiles);
+router.get("/userid/:userId", getUserFiles);
 router.get("/id/:id", getFileById);
 router.post("/", upload.single("file"), uploadFile);
 router.delete("/:id", removeFile);

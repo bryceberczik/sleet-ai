@@ -40,7 +40,7 @@ export const getUserFiles = async (req: Request, res: Response) => {
     }
 
     const files = await prisma.file.findMany({
-      where: { id: parsedUserId.data },
+      where: { userId: parsedUserId.data },
       select: {
         id: true,
         userId: true,
@@ -64,6 +64,7 @@ export const getFileById = async (req: Request, res: Response) => {
     const parsedId = idSchema.safeParse(id);
     if (!parsedId.success) {
       res.status(400).json({ message: "Controller Parsing Error" });
+      return;
     }
 
     const file = await prisma.file.findUnique({
@@ -145,7 +146,7 @@ export const uploadFile = async (req: Request, res: Response) => {
 
 export const removeFile = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { userId, fileName } = req.body;
+  const { userId } = req.body;
 
   try {
     const parsedId = idSchema.safeParse(id);
