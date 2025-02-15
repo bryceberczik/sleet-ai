@@ -1,13 +1,17 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { idSchema } from "../schemas/idSchema";
-import AWS from "../config/awsConfig";
+import {
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import s3Client from "../config/awsConfig";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const prisma = new PrismaClient();
-const s3 = new AWS.S3();
 const bucket = process.env.BUCKET_NAME!;
 
 export const getFiles = async (_req: Request, res: Response) => {
@@ -40,7 +44,7 @@ export const getUserFiles = async (req: Request, res: Response) => {
     }
 
     const files = await prisma.file.findMany({
-      where: { id: parsedUserId.data },
+      where: { userId: parsedUserId.data },
       select: {
         id: true,
         userId: true,
@@ -64,6 +68,7 @@ export const getFileById = async (req: Request, res: Response) => {
     const parsedId = idSchema.safeParse(id);
     if (!parsedId.success) {
       res.status(400).json({ message: "Controller Parsing Error" });
+      return;
     }
 
     const file = await prisma.file.findUnique({
@@ -119,7 +124,7 @@ export const uploadFile = async (req: Request, res: Response) => {
       ContentType: req.file.mimetype,
     };
 
-    await s3.upload(bucketParams).promise();
+    await s3Client.send(new PutObjectCommand(bucketParams));
     const newFile = await prisma.file.create({
       data: {
         userId: parsedUserId.data,
@@ -145,7 +150,7 @@ export const uploadFile = async (req: Request, res: Response) => {
 
 export const removeFile = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { userId, fileName } = req.body;
+  const { userId } = req.body;
 
   try {
     const parsedId = idSchema.safeParse(id);
@@ -181,7 +186,7 @@ export const removeFile = async (req: Request, res: Response) => {
       Key: `${parsedUserId.data}/${existingFile.fileName}`,
     };
 
-    await s3.deleteObject(bucketParams).promise();
+    await s3Client.send(new DeleteObjectCommand(bucketParams));
     const deletedFile = await prisma.file.delete({
       where: { id: parsedId.data },
     });
@@ -223,10 +228,10 @@ export const downloadFile = async (req: Request, res: Response) => {
       Key: `${parsedUserId.data}/${existingFile.fileName}`,
     };
 
-    const fileStream = s3.getObject(bucketParams).createReadStream();
+    const s3Response = await s3Client.send(new GetObjectCommand(bucketParams));
     res.setHeader("Content-Type", existingFile.fileType);
 
-    fileStream.pipe(res);
+    (s3Response.Body as NodeJS.ReadableStream).pipe(res);
   } catch (error) {
     console.error("Error downloading file:", error);
     res.status(500).json({ message: "Server Error" });
