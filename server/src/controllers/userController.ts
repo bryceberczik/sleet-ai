@@ -5,7 +5,6 @@ import {
   usernameSchema,
   emailSchema,
   passwordSchema,
-  hasPremiumSchema,
 } from "../schemas/userSchema";
 import bcrypt from "bcrypt";
 
