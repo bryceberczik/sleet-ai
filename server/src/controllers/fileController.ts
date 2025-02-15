@@ -112,6 +112,7 @@ export const uploadFile = async (req: Request, res: Response) => {
     const existingUser = prisma.user.findUnique({
       where: { id: parsedUserId.data },
     });
+
     if (!existingUser) {
       res.status(404).json({ message: "User not found." });
       return;
@@ -163,6 +164,7 @@ export const removeFile = async (req: Request, res: Response) => {
     const existingUser = prisma.user.findUnique({
       where: { id: parsedUserId.data },
     });
+
     if (!existingUser) {
       res.status(404).json({ message: "User not found." });
       return;
@@ -171,13 +173,14 @@ export const removeFile = async (req: Request, res: Response) => {
     const existingFile = await prisma.file.findUnique({
       where: { id: parsedId.data },
     });
+
     if (!existingFile) {
       res.status(404).json({ message: "File not found." });
       return;
     }
 
     if (parsedUserId.data !== existingFile.userId) {
-      res.status(403).json({ message: "Unauthorized access." });
+      res.status(401).json({ message: "Unauthorized access." });
       return;
     }
 
@@ -187,11 +190,9 @@ export const removeFile = async (req: Request, res: Response) => {
     };
 
     await s3Client.send(new DeleteObjectCommand(bucketParams));
-    const deletedFile = await prisma.file.delete({
-      where: { id: parsedId.data },
-    });
+    await prisma.file.delete({ where: { id: parsedId.data } });
 
-    res.status(200).json({ success: !!deletedFile });
+    res.status(204);
   } catch (error) {
     console.error("Error deleting file", error);
     res.status(500).json({ message: "Server Error" });
@@ -213,13 +214,14 @@ export const downloadFile = async (req: Request, res: Response) => {
     const existingFile = await prisma.file.findUnique({
       where: { id: parsedId.data },
     });
+
     if (!existingFile) {
       res.status(404).json({ message: "File not found." });
       return;
     }
 
     if (parsedUserId.data !== existingFile.userId) {
-      res.status(403).json({ message: "Unauthorized access." });
+      res.status(401).json({ message: "Unauthorized access." });
       return;
     }
 
