@@ -192,7 +192,7 @@ export const removeFile = async (req: Request, res: Response) => {
     await s3Client.send(new DeleteObjectCommand(bucketParams));
     await prisma.file.delete({ where: { id: parsedId.data } });
 
-    res.status(204);
+    res.sendStatus(204);
   } catch (error) {
     console.error("Error deleting file", error);
     res.status(500).json({ message: "Server Error" });

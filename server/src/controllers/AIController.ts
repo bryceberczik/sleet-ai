@@ -19,8 +19,8 @@ const apiKey = process.env.OPENAI_API_KEY!;
 const bucket = process.env.BUCKET_NAME!;
 
 const chooseModel = (hasPremium: boolean) => {
-  let AIModel = "gpt-4o";
-  if (hasPremium) AIModel = "o1";
+  let AIModel = "gpt-3.5-turbo";
+  if (hasPremium) AIModel = "gpt-4-turbo";
 
   return new ChatOpenAI({
     temperature: 0,
