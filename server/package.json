@@ -21,6 +21,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.749.0",
+    "@langchain/core": "^0.3.40",
+    "@langchain/openai": "^0.4.4",
     "@prisma/client": "^6.3.1",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
