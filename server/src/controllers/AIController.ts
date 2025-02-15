@@ -7,22 +7,26 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "../config/awsConfig";
 import dotenv from "dotenv";
 
+// * File Parsers * //
+import YAML from "yaml";
+import { parse as csvParse } from "csv-parse";
+import { deserialize as bsonParse } from "bson";
+
 dotenv.config();
 
 const prisma = new PrismaClient();
 const apiKey = process.env.OPENAI_API_KEY!;
 const bucket = process.env.BUCKET_NAME!;
 
-type AIModelType = "gpt-4o" | "o1";
+const chooseModel = (hasPremium: boolean) => {
+  let AIModel = "gpt-4o";
+  if (hasPremium) AIModel = "o1";
 
-const chooseModel = (AIModel: AIModelType) => {
-  const model = new ChatOpenAI({
+  return new ChatOpenAI({
     temperature: 0,
     openAIApiKey: apiKey,
     model: AIModel,
   });
-
-  return model;
 };
 
 const promptTemplate = new PromptTemplate({
@@ -64,10 +68,57 @@ export const generateAIResponse = async (req: Request, res: Response) => {
     };
 
     const s3Response = await s3Client.send(new GetObjectCommand(bucketParams));
-
-    if (!s3Response.Body) {
-      res.status(404).json({ message: "S3 Response Body not found." });
+    if (!s3Response.Body || !s3Response.ContentType) {
+      res
+        .status(404)
+        .json({ message: "S3 Response Body and/or Content Type not found." });
       return;
     }
-  } catch (error) {}
+
+    const stringBody = await s3Response.Body.transformToString("utf-8");
+
+    const fileType = s3Response.ContentType;
+    let fileData;
+
+    switch (fileType) {
+      case "application/json":
+        fileData = JSON.parse(stringBody);
+        break;
+
+      case "application/yaml":
+      case "text/yaml":
+        fileData = YAML.parse(stringBody);
+        break;
+
+      case "text/csv":
+        (fileData = csvParse(stringBody)), { columms: true };
+        break;
+
+      case "application/bson":
+        const byteArray = await s3Response.Body.transformToByteArray();
+        fileData = bsonParse(byteArray);
+        break;
+
+      default:
+        res
+          .status(400)
+          .json({ message: `Unsupported file type of ${fileType}.` });
+        return;
+    }
+
+    const formattedInput = await promptTemplate.format({
+      file_data: fileData,
+      file_type: fileType,
+      user_prompt: parsedRequest.data.prompt,
+      response_mode: parsedRequest.data.mode,
+    });
+
+    const chosenModel = chooseModel(parsedRequest.data.hasPremium);
+    const response = await chosenModel.invoke(formattedInput);
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Error generating AI response:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };
