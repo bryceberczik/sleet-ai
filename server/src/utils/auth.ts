@@ -41,12 +41,12 @@ export const authenticateToken = async (
           let message = "Unknown Token Error";
           if (err instanceof TokenExpiredError) message = "Token is expired.";
           if (err instanceof JsonWebTokenError) message = "Token is invalid.";
-          res.status(403).json({ message });
+          res.status(401).json({ message });
           return;
         }
 
         if (!decoded || typeof decoded === "string") {
-          res.status(403).json({ message: "Malformed token payload." });
+          res.status(401).json({ message: "Malformed token payload." });
           return;
         }
 
@@ -67,7 +67,6 @@ export const signUp = async (req: Request, res: Response) => {
     const parsedUsername = usernameSchema.safeParse(username);
     const parsedEmail = emailSchema.safeParse(email);
     const parsedPassword = passwordSchema.safeParse(password);
-
     if (
       !parsedUsername.success ||
       !parsedEmail.success ||
@@ -80,8 +79,9 @@ export const signUp = async (req: Request, res: Response) => {
     const existingUser = await prisma.user.findUnique({
       where: { email: parsedEmail.data },
     });
+
     if (existingUser) {
-      res.status(403).json({ message: "User with this email already exists." });
+      res.status(409).json({ message: "User with this email already exists." });
     }
 
     const saltRounds = 10;
@@ -119,7 +119,6 @@ export const login = async (req: Request, res: Response) => {
   try {
     const parsedEmail = emailSchema.safeParse(email);
     const parsedPassword = passwordSchema.safeParse(password);
-
     if (!parsedEmail.success || !parsedPassword.success) {
       res.status(400).json({ message: "Auth Parsing Error" });
       return;
@@ -128,6 +127,7 @@ export const login = async (req: Request, res: Response) => {
     const existingUser = await prisma.user.findUnique({
       where: { email: parsedEmail.data },
     });
+
     if (!existingUser) {
       res.status(404).json({ message: "User not found." });
       return;
