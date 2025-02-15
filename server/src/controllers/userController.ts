@@ -5,7 +5,6 @@ import {
   usernameSchema,
   emailSchema,
   passwordSchema,
-  hasPremiumSchema,
 } from "../schemas/userSchema";
 import bcrypt from "bcrypt";
 
@@ -23,11 +22,6 @@ export const getUsers = async (_req: Request, res: Response) => {
         myFiles: true,
       },
     });
-
-    if (!users) {
-      res.status(404).json({ message: "No users found." });
-      return;
-    }
 
     res.status(200).json(users);
   } catch (error) {
@@ -128,7 +122,7 @@ export const createUser = async (req: Request, res: Response) => {
     });
 
     if (existingUser) {
-      res.status(403).json({ message: "User with this email already exists." });
+      res.status(409).json({ message: "User with this email already exists." });
       return;
     }
 
@@ -170,8 +164,9 @@ export const updateUser = async (req: Request, res: Response) => {
     const existingUser = await prisma.user.findUnique({
       where: { id: parsedId.data },
     });
+
     if (!existingUser) {
-      res.status(403).json({ message: "User does not exist." });
+      res.status(404).json({ message: "User not found." });
       return;
     }
 
@@ -181,7 +176,7 @@ export const updateUser = async (req: Request, res: Response) => {
     );
 
     if (!passwordIsValid) {
-      res.status(403).json({ message: "Passwords do not match." });
+      res.status(401).json({ message: "Passwords do not match." });
       return;
     }
 
@@ -192,8 +187,9 @@ export const updateUser = async (req: Request, res: Response) => {
         res.status(400).json({ message: "Controller Parsing Error" });
         return;
       }
+
       if (parsedUsername.data === existingUser.username) {
-        res.status(403).json({
+        res.status(409).json({
           message: "Provided username is already user's current username.",
         });
         return;
@@ -208,9 +204,10 @@ export const updateUser = async (req: Request, res: Response) => {
         res.status(400).json({ message: "Controller Parsing Error" });
         return;
       }
+
       if (parsedEmail.data === existingUser.email) {
         res
-          .status(403)
+          .status(409)
           .json({ message: "Provided email is already user's current email." });
         return;
       }
@@ -258,7 +255,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     });
 
     if (!existingUser) {
-      res.status(403).json({ message: "User does not exist." });
+      res.status(404).json({ message: "User not found." });
       return;
     }
 
@@ -268,15 +265,13 @@ export const deleteUser = async (req: Request, res: Response) => {
     );
 
     if (!passwordIsValid) {
-      res.status(403).json({ message: "Passwords do not match." });
+      res.status(401).json({ message: "Passwords do not match." });
       return;
     }
 
-    const deletedUser = await prisma.user.delete({
-      where: { id },
-    });
+    await prisma.user.delete({ where: { id } });
 
-    res.status(200).json({ success: !!deletedUser });
+    res.status(204);
   } catch (error) {
     console.error("Error deleting user:", error);
     res.status(500).json({ message: "Server Error" });

@@ -10,4 +10,3 @@ export const passwordSchema = z
   .regex(/[A-Z]/)
   .regex(/\d/)
   .regex(/[@$!%*?&]/);
-export const hasPremiumSchema = z.boolean();
