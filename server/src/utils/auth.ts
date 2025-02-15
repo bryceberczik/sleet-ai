@@ -80,7 +80,6 @@ export const signUp = async (req: Request, res: Response) => {
     const existingUser = await prisma.user.findUnique({
       where: { email: parsedEmail.data },
     });
-
     if (existingUser) {
       res.status(403).json({ message: "User with this email already exists." });
     }
@@ -110,6 +109,52 @@ export const signUp = async (req: Request, res: Response) => {
     res.status(201).json(token);
   } catch (error) {
     console.error("Error signing up user:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const login = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  try {
+    const parsedEmail = emailSchema.safeParse(email);
+    const parsedPassword = passwordSchema.safeParse(password);
+
+    if (!parsedEmail.success || !parsedPassword.success) {
+      res.status(400).json({ message: "Auth Parsing Error" });
+      return;
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: parsedEmail.data },
+    });
+    if (!existingUser) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+
+    const passwordIsValid = await bcrypt.compare(
+      parsedPassword.data,
+      existingUser.password
+    );
+
+    if (!passwordIsValid) {
+      res.status(401).json({ message: "Passwords do not match." });
+    }
+
+    const token = jwt.sign(
+      {
+        id: existingUser.id,
+        email: existingUser.email,
+        hasPremium: existingUser.hasPremium,
+      },
+      secretKey,
+      { expiresIn: "7d" }
+    );
+
+    res.status(201).json(token);
+  } catch (error) {
+    console.error("Error logging in user:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
